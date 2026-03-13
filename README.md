@@ -22,13 +22,81 @@ You can also use it for taking notes for lectures or organizing your thoughts.
 
 ## Installation
 
+### macOS
+
 ```bash
 brew install --cask fastrepl/fastrepl/char
 ```
 
-- [macOS](https://char.com/download) (public beta)
-- [Windows](https://github.com/fastrepl/char/issues/66) (q2 2026)
-- [Linux](https://github.com/fastrepl/char/issues/67) (q2 2026)
+Or download directly from [char.com/download](https://char.com/download) (public beta).
+
+### Ubuntu / Linux
+
+**1. Install system dependencies**
+
+```bash
+sudo apt install -y \
+  build-essential pkg-config \
+  libwebkit2gtk-4.1-dev libssl-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev \
+  libasound2-dev libpulse-dev \
+  libjavascriptcoregtk-4.1-dev libsoup-3.0-dev \
+  patchelf
+```
+
+**2. Install Rust**
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source ~/.cargo/env
+```
+
+**3. Install Node.js (v22+) and pnpm**
+
+```bash
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
+corepack enable && corepack prepare pnpm@10.32.1 --activate
+```
+
+**4. Build and run**
+
+```bash
+pnpm install
+pnpm -F @hypr/desktop tauri:dev
+```
+
+### Windows
+
+**1. Install prerequisites**
+
+- [Visual Studio Build Tools](https://aka.ms/vs/17/release/vs_BuildTools.exe) — select the **Desktop development with C++** workload
+- [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) — required by Tauri
+- [Rust](https://rustup.rs)
+- [Node.js v22+](https://nodejs.org) and pnpm (`npm install -g pnpm`)
+
+**2. Build and run**
+
+```bash
+pnpm install
+pnpm -F @hypr/desktop tauri:dev
+```
+
+### Platform feature matrix
+
+| Feature | macOS | Linux | Windows |
+|---------|-------|-------|---------|
+| Audio capture (mic + speaker) | ✅ CoreAudio | ✅ PulseAudio/PipeWire | ✅ WASAPI |
+| Audio device management | ✅ | ✅ | ✅ |
+| Microphone usage detection | ✅ | ✅ | ✅ stub |
+| Note-taking & editor | ✅ | ✅ | ✅ |
+| Local transcription (STT) | ✅ | ✅ | ✅ |
+| Language / locale detection | ✅ | ✅ | ✅ |
+| Sleep / wake detection | ✅ | ✅ | ✅ |
+| Sync, Google/Outlook calendar | ✅ | ✅ | ✅ |
+| Apple Calendar & Contacts | ✅ | ❌ | ❌ |
+| Zoom mute detection | ✅ | ❌ | ❌ |
+| Dock menu | ✅ | ❌ | ❌ |
 
 ## Highlights
 
@@ -93,3 +161,57 @@ Ask follow-ups right inside your notes:
 - Coming soon: Notion, Slack, Hubspot, Salesforce
 
 <img width="912" height="712" alt="image" src="https://github.com/user-attachments/assets/ab559e54-fda5-4c8c-97d7-ba1b9d134cc8" />
+
+## Development
+
+### Tech stack
+
+| Layer | Technology |
+|-------|-----------|
+| Desktop shell | [Tauri 2](https://tauri.app) (Rust + WebView) |
+| Frontend | React 19, TanStack Router, TipTap editor |
+| Local data store | TinyBase (SQLite-backed) |
+| UI state | Zustand |
+| Forms / queries | TanStack Form + TanStack Query |
+| Styling | Tailwind CSS v4 |
+| Web app | TanStack Start (SSR) |
+| API server | Axum (Rust) |
+| Audio / STT | CPAL, PulseAudio, WASAPI, CoreAudio, Whisper, Cactus |
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `pnpm -F @hypr/desktop tauri:dev` | Run desktop app in dev mode |
+| `pnpm -F @hypr/web dev` | Run web app in dev mode |
+| `pnpm exec dprint fmt` | Format all code |
+| `pnpm -r typecheck` | TypeScript type-check all packages |
+| `cargo check` | Rust type-check all crates |
+
+### Repository layout
+
+```
+char/
+├── apps/
+│   ├── desktop/        # Tauri desktop app (React + Rust)
+│   │   └── src-tauri/  # Rust backend, Tauri config
+│   ├── web/            # Marketing & web app (TanStack Start)
+│   └── api/            # REST API server (Axum)
+├── packages/
+│   ├── store/          # TinyBase schema — central data model
+│   ├── ui/             # Shared component library
+│   └── utils/          # Shared utilities (cn, etc.)
+├── crates/             # 130+ Rust library crates
+│   ├── audio*/         # Cross-platform audio capture
+│   ├── detect/         # Mic/app/sleep detection (all platforms)
+│   └── transcribe*/    # Whisper / Cactus STT pipeline
+└── plugins/            # 46+ Tauri plugins
+```
+
+### Code conventions
+
+- Format via `dprint` after every change (`pnpm exec dprint fmt`)
+- TypeScript: use `useForm` (TanStack Form) and `useQuery`/`useMutation` (TanStack Query) — no manual state for forms/mutations
+- Classnames: always use `cn` from `@hypr/utils`
+- Animation: use `motion/react`, not `framer-motion`
+- Comments: only where the logic is non-obvious; explain *why*, not *what*

@@ -1,12 +1,12 @@
 #[cfg(feature = "app")]
 mod app;
-#[cfg(all(target_os = "macos", feature = "language"))]
+#[cfg(feature = "language")]
 mod language;
 #[cfg(feature = "list")]
 mod list;
 #[cfg(feature = "mic")]
 mod mic;
-#[cfg(all(target_os = "macos", feature = "sleep"))]
+#[cfg(feature = "sleep")]
 mod sleep;
 
 mod utils;
@@ -23,7 +23,7 @@ mod zoom;
 
 #[cfg(feature = "app")]
 pub use app::*;
-#[cfg(all(target_os = "macos", feature = "language"))]
+#[cfg(feature = "language")]
 pub use language::*;
 #[cfg(feature = "list")]
 pub use list::*;
@@ -38,7 +38,7 @@ pub use mic::*;
 ))]
 pub use zoom::*;
 
-#[cfg(all(target_os = "macos", feature = "sleep"))]
+#[cfg(feature = "sleep")]
 pub use sleep::*;
 
 #[cfg(feature = "mic")]
@@ -50,7 +50,7 @@ pub enum DetectEvent {
     ZoomMuteStateChanged {
         value: bool,
     },
-    #[cfg(all(target_os = "macos", feature = "sleep"))]
+    #[cfg(feature = "sleep")]
     SleepStateChanged {
         value: bool,
     },
@@ -79,7 +79,7 @@ pub struct Detector {
     mic_detector: MicDetector,
     #[cfg(all(target_os = "macos", feature = "zoom", feature = "list"))]
     zoom_watcher: ZoomMuteWatcher,
-    #[cfg(all(target_os = "macos", feature = "sleep"))]
+    #[cfg(feature = "sleep")]
     sleep_detector: SleepDetector,
 }
 
@@ -91,7 +91,7 @@ impl Detector {
         #[cfg(all(target_os = "macos", feature = "zoom", feature = "list"))]
         self.zoom_watcher.start(f.clone());
 
-        #[cfg(all(target_os = "macos", feature = "sleep"))]
+        #[cfg(feature = "sleep")]
         self.sleep_detector.start(f);
     }
 
@@ -101,7 +101,7 @@ impl Detector {
         #[cfg(all(target_os = "macos", feature = "zoom", feature = "list"))]
         self.zoom_watcher.stop();
 
-        #[cfg(all(target_os = "macos", feature = "sleep"))]
+        #[cfg(feature = "sleep")]
         self.sleep_detector.stop();
     }
 }

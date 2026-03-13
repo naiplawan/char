@@ -1,22 +1,81 @@
 pub fn get_preferred_languages() -> Vec<hypr_language::Language> {
-    use objc2_foundation::NSLocale;
-
-    let languages = NSLocale::preferredLanguages();
-    languages
-        .iter()
-        .filter_map(|s| locale_to_language(&s.to_string()))
+    get_locale_strings()
+        .into_iter()
+        .filter_map(|s| locale_to_language(&s))
         .collect()
+}
+
+pub fn get_current_locale_identifier() -> String {
+    get_locale_strings().into_iter().next().unwrap_or_default()
 }
 
 fn locale_to_language(locale: &str) -> Option<hypr_language::Language> {
     locale.parse().ok()
 }
 
-pub fn get_current_locale_identifier() -> String {
+#[cfg(target_os = "macos")]
+fn get_locale_strings() -> Vec<String> {
     use objc2_foundation::NSLocale;
 
-    let locale = NSLocale::currentLocale();
-    locale.localeIdentifier().to_string()
+    let languages = NSLocale::preferredLanguages();
+    languages.iter().map(|s| s.to_string()).collect()
+}
+
+#[cfg(target_os = "linux")]
+fn get_locale_strings() -> Vec<String> {
+    if let Ok(lang) = std::env::var("LANGUAGE") {
+        let langs: Vec<String> = lang
+            .split(':')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.split('.').next().unwrap_or(s).replace('_', "-"))
+            .collect();
+        if !langs.is_empty() {
+            return langs;
+        }
+    }
+
+    for var in &["LANG", "LC_ALL", "LC_MESSAGES"] {
+        if let Ok(locale) = std::env::var(var) {
+            let normalized = locale
+                .split('.')
+                .next()
+                .unwrap_or(&locale)
+                .replace('_', "-");
+            if !normalized.is_empty() && normalized != "C" && normalized != "POSIX" {
+                return vec![normalized];
+            }
+        }
+    }
+
+    vec!["en-US".to_string()]
+}
+
+#[cfg(target_os = "windows")]
+fn get_locale_strings() -> Vec<String> {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+
+    extern "system" {
+        fn GetUserDefaultLocaleName(lp_locale_name: *mut u16, cch_locale_name: i32) -> i32;
+    }
+
+    // LOCALE_NAME_MAX_LENGTH = 85
+    let mut buf = [0u16; 85];
+    let len = unsafe { GetUserDefaultLocaleName(buf.as_mut_ptr(), buf.len() as i32) };
+
+    if len > 1 {
+        let locale = OsString::from_wide(&buf[..len as usize - 1])
+            .to_string_lossy()
+            .into_owned();
+        vec![locale]
+    } else {
+        vec!["en-US".to_string()]
+    }
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+fn get_locale_strings() -> Vec<String> {
+    vec!["en-US".to_string()]
 }
 
 #[cfg(test)]

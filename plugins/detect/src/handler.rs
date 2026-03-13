@@ -56,7 +56,7 @@ pub fn handle_detect_event<E: Env>(
         hypr_detect::DetectEvent::ZoomMuteStateChanged { value } => {
             env.emit(DetectEvent::MicMuteStateChanged { value });
         }
-        #[cfg(all(target_os = "macos", feature = "sleep"))]
+        #[cfg(feature = "sleep")]
         hypr_detect::DetectEvent::SleepStateChanged { value } => {
             env.emit(DetectEvent::SleepStateChanged { value });
         }
